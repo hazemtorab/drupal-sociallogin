@@ -1,0 +1,99 @@
+<?php
+
+function social_menu()
+{
+  $items = array();
+  $items['node/get/ajax/%'] = array(
+      'page callback' => 'social_ajax_get_ajax', // Render HTML
+      'access callback' => TRUE,
+      'expanded' => TRUE,
+      'delivery callback' => 'social_ajax_callback',  // Magic goes here
+      );
+  return $items;
+
+}
+
+/**
+ * implimentation of social_form_alter()
+ */
+function social_form_alter(&$form, $form_state, $form_id) {
+ if ($form_id == "user_login_block") {
+
+   drupal_add_css(drupal_get_path('module', 'social') . '/theme/social.css', array('group' => CSS_DEFAULT, 'every_page' => True));
+
+   drupal_add_js(drupal_get_path('module', 'social') . '/facebook.js');
+
+ }
+}
+
+
+function social_theme(&$existing, $type, $theme, $path) {
+ $hooks['user_login_block'] = array(
+   'template' => 'templates/user-login-block',
+   'render element' => 'form',
+   );
+ return $hooks;
+}
+
+function social_ajax_get_ajax()
+{
+
+}
+
+function social_preprocess_user_login_block(&$vars) {
+
+
+ $vars['name'] = render($vars['form']['name']);
+ $vars['pass'] = render($vars['form']['pass']);
+ $vars['submit'] = render($vars['form']['actions']['submit']);
+ $vars['rendered'] = drupal_render_children($vars['form']);
+ return '';
+}
+
+function social_ajax_callback($page_callback_result) {
+  global $base_url;
+  global $user;
+
+
+  $socialUser =  user_load_by_mail( $_GET["email"]  );;
+
+
+if (!$socialUser)//New User
+{
+  $values = array(
+
+    'name' => $_GET["email"] , 
+    'pass' => '',  
+    'mail' =>$_GET["email"] , 
+    'status'=>1,
+    'init'=> $_GET["email"] 
+    );
+
+  $socialUser = user_save('', $values);
+
+  //save to civicrm
+
+  civicrm_initialize( );
+  $params = array(
+    'version' => 3,
+    'contact_type' => 'Individual',
+    'first_name' => $_GET["firstname"],
+    'last_name' => $_GET["lastname"],
+    'nick_name' => $_GET["email"],
+    'options' => array(
+    'reload' => 1,
+      ));
+  $results = civicrm_api("Contact","create", $params);
+}
+
+$user = user_load($socialUser->uid);
+$login_array = array ('name' => $socialUser->name);
+user_login_finalize($login_array);
+
+
+print('<script>window.location="'.$base_url.'";</script>');
+
+
+
+
+}

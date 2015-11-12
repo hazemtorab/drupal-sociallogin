@@ -1,0 +1,10 @@
+.social-icon-fb
+{
+	background-image:url(fb.png);
+	background-size: 150px 35px;
+	width:150px;
+	height:35px;
+ 
+	display: block;
+
+}
